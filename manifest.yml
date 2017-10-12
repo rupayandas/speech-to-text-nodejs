@@ -1,12 +1,12 @@
 ---
 declared-services:
-  speech-to-text-service-standard:
+  my-stt-service:
     label: speech_to_text
     plan: standard
 applications:
-- name: speech-to-text-nodejs-updated
-  command: node app.js
+- name: speech-to-text-demo
   path: .
-  memory: 256m
+  command: npm start
+  memory: 512M
   services:
-  - speech-to-text-service-standard
+  - my-stt-service

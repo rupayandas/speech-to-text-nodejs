@@ -1,5 +1,5 @@
 /**
- * Copyright 2014, 2015 IBM Corp. All Rights Reserved.
+ * Copyright 2015 IBM Corp. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,49 +14,39 @@
  * limitations under the License.
  */
 
-'use strict';
 
-var express = require('express'),
-    app = express(),
-    errorhandler = require('errorhandler'),
-    bluemix = require('./config/bluemix'),
-    watson = require('watson-developer-cloud'),
-    path = require('path'),
-    // environmental variable points to demo's json config file
-    extend = require('util')._extend;
+const express = require('express');
 
-// For local development, put username and password in config
-// or store in your environment
-var config = {
-  version: 'v1',
-  url: 'https://stream.watsonplatform.net/speech-to-text/api',
-  username: '<username>',
-  password: '<password>'
-};
+const app = express();
+const watson = require('watson-developer-cloud');
 
-// if bluemix credentials exist, then override local
-var credentials = extend(config, bluemix.getServiceCreds('speech_to_text'));
-var authorization = watson.authorization(credentials);
+// Bootstrap application settings
+require('./config/express')(app);
 
-// Setup static public directory
-app.use(express.static(path.join(__dirname , './public')));
+const stt = new watson.SpeechToTextV1({
+  // if left undefined, username and password to fall back to the SPEECH_TO_TEXT_USERNAME and
+  // SPEECH_TO_TEXT_PASSWORD environment properties, and then to VCAP_SERVICES (on Bluemix)
+  // username: '',
+  // password: ''
+});
 
-// Get token from Watson using your credentials
-app.get('/token', function(req, res) {
-  authorization.getToken({url: credentials.url}, function(err, token) {
-    if (err) {
-      console.log('error:', err);
-      res.status(err.code);
-    }
+const authService = new watson.AuthorizationV1(stt.getCredentials());
 
-    res.send(token);
+app.get('/', (req, res) => {
+  res.render('index', {
+    bluemixAnalytics: !!process.env.BLUEMIX_ANALYTICS,
   });
 });
 
-// Add error handling in dev
-if (!process.env.VCAP_SERVICES) {
-  app.use(errorhandler());
-}
-var port = process.env.VCAP_APP_PORT || 3000;
-app.listen(port);
-console.log('listening at:', port);
+// Get token using your credentials
+app.get('/api/token', (req, res, next) => {
+  authService.getToken((err, token) => {
+    if (err) {
+      next(err);
+    } else {
+      res.send(token);
+    }
+  });
+});
+
+module.exports = app;

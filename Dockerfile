@@ -1,13 +1,12 @@
 
-FROM centos:centos6  
-RUN curl -sL https://rpm.nodesource.com/setup | bash -  
+FROM centos:centos6
+RUN curl -sL https://rpm.nodesource.com/setup_6.x | bash -
 RUN yum install -y nodejs  #
 # Define working directory.
-COPY ./ /src/
+COPY . /src
 WORKDIR /src
-
 RUN npm install
 
 EXPOSE 3000 8020
 # Define default command.
-CMD ["node", "app.js"]
+CMD ["node", "server.js"]
